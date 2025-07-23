@@ -16,9 +16,9 @@ FinSubproceso
 Subproceso pitagoras(a : real, b : real)
     Definir c : real
     Hacer c = (a^2 + b^2)^(1/2)
-    Escribir c
+    Escribir "La hipotenusa es: ", c
 FinSubproceso
 
-Subproceso holaMundo()
-    Escribir "Hola Mundo"
+Subproceso holaMundo(nombre : cadena)
+    Escribir "Hola Mundo, hola ", nombre
 FinSubproceso

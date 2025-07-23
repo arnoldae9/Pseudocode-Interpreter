@@ -75,6 +75,12 @@ class PseudoInterpreter:
             case _ if line.startswith("Llamar"):
                 self.Llamar(line)
 
+            case _ if line.startswith("Regresar"):
+                self.Regresar(line)
+
+            case _ if line.startswith("Escribir"):
+                self.Escribir(line)
+
             case _:
                 self.NoReconocido(line)
 
@@ -175,15 +181,15 @@ class PseudoInterpreter:
         if not match:
             self.codeLines.append(f"{self.indent * self.currentIndent}# Error al procesar Hacer")
             return
-        var_expr, expr = match.groups()
-        var_expr = var_expr.strip()
+        varExpr, expr = match.groups()
+        varExpr = varExpr.strip()
         expr = expr.strip()
         
         expr = self._convertExpression(expr)
         # Detecta si es acceso tipo a[i][j]
-        if "[" in var_expr and "]" in var_expr:
-            arreglo = var_expr.split("[")[0].strip()
-            indices = re.findall(r"\[(.*?)\]", var_expr)
+        if "[" in varExpr and "]" in varExpr:
+            arreglo = varExpr.split("[")[0].strip()
+            indices = re.findall(r"\[(.*?)\]", varExpr)
             acceso = f"context['{arreglo}']"
             for idx in indices:
                 idx = idx.strip()
@@ -194,7 +200,7 @@ class PseudoInterpreter:
             self.codeLines.append(f"{self.indent * self.currentIndent}{acceso} = {expr}")
         else:
             # Variable 
-            self.codeLines.append(f"{self.indent * self.currentIndent}context['{var_expr}'] = {expr}")
+            self.codeLines.append(f"{self.indent * self.currentIndent}context['{varExpr}'] = {expr}")
         return
 
     def Llamar(self,line):
@@ -202,19 +208,109 @@ class PseudoInterpreter:
         if m:
             func, args = m.groups()
             args = [a.strip() for a in args.split(",") if a.strip()]
-            param_names = self.functions.get(func, None)
-            print(param_names)
-            if not param_names:
+            paramNames = self.functions.get(func, None)
+            #print(paramNames)
+            if not paramNames:
                 self.codeLines.append(f"{self.indent * self.currentIndent}{line}")
                 return
-            print(args)
-            for param, arg in zip(param_names, args):
-                expr = self._convertExpression(arg)
-                #self.codeLines.append(f"{self.indent * self.currentIndent}context['{param}'] = {expr}")
 
             self.codeLines.append(f"{self.indent * self.currentIndent}{func}({", ".join(args)}, context)")
             return
         return
+    
+    def Regresar(self,line):
+        m = re.match(r"Regresar (.+)", line)
+        if m:
+            expr = self._convertExpression(m.group(1))
+            self.codeLines.append(f"{self.indent * self.currentIndent}return {expr}")
+            return
+        
+    def Escribir(self, line):
+        m = re.match(r"Escribir\s+(.+)", line)
+        if not m:
+            self.codeLines.append(f"{self.indent * self.currentIndent}# Error al procesar Escribir")
+            return
+
+        texto = m.group(1).strip()
+        partes = []
+        actual = ""
+        en_cadena = False
+        comilla_actual = ""
+
+        # 👉 Separación segura por comas respetando comillas
+        for c in texto:
+            if c in ['"', "'"]:
+                if not en_cadena:
+                    en_cadena = True
+                    comilla_actual = c
+                    actual += c
+                elif c == comilla_actual:
+                    en_cadena = False
+                    actual += c
+                else:
+                    actual += c
+            elif c == ',' and not en_cadena:
+                partes.append(actual.strip())
+                actual = ""
+            else:
+                actual += c
+        if actual:
+            partes.append(actual.strip())
+
+        traducidas = []
+        for parte in partes:
+            parte = parte.strip()
+
+            # 👉 Cadena literal
+            if (parte.startswith('"') and parte.endswith('"')) or (parte.startswith("'") and parte.endswith("'")):
+                traducidas.append(parte)
+
+            # 👉 Acceso tipo arreglo tabla[i][j]
+            elif "[" in parte and "]" in parte:
+                arreglo = parte.split("[")[0]
+                indices = re.findall(r"\[(.*?)\]", parte)
+                if self.esSubproceso:
+                    acceso = arreglo
+                else:
+                    acceso = f"context['{arreglo}']"
+                for idx in indices:
+                    idx = idx.strip()
+                    if idx.isdigit():
+                        acceso += f"[{idx}]"
+                    else:
+                        if self.esSubproceso:
+                            params = self.functions.get(self.subprocesoActual, {})
+                            if idx in params:
+                                acceso += f"[{idx}]"
+                            else:
+                                acceso += f"[context['{idx}']]"
+                        else:
+                            acceso += f"[context['{idx}']]"
+                traducidas.append(acceso)
+
+            # 👉 Variable simple
+            elif re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', parte):
+                if self.esSubproceso:
+                    params = self.functions.get(self.SubprocesoActual, {})
+                    if parte in params:
+                        traducidas.append(parte)
+                    else:
+                        traducidas.append(f"context['{parte}']")
+                else:
+                    traducidas.append(f"context['{parte}']")
+
+            # 👉 Número literal
+            elif parte.isdigit():
+                traducidas.append(parte)
+
+            # 👉 Texto plano como fallback
+            else:
+                traducidas.append(f"'{parte}'")
+
+        self.codeLines.append(f"{self.indent * self.currentIndent}print({', '.join(traducidas)}, sep='')")
+
+
+
     
     def NoReconocido(self,line):
         self.codeLines.append(f"{self.indent * self.currentIndent}# No procesado: {line}")
@@ -246,10 +342,10 @@ class PseudoInterpreter:
         
         # Extraer cadenas literales y reemplazarlas por tokens
 
-        string_literals = re.findall(patron, expr, re.VERBOSE)
+        stringLiterals = re.findall(patron, expr, re.VERBOSE)
         replacements = {}
 
-        for i, lit in enumerate(string_literals):
+        for i, lit in enumerate(stringLiterals):
             lit = lit.strip()
             # Detectar tipo
             if lit in ("True", "False"):
@@ -262,14 +358,14 @@ class PseudoInterpreter:
                 key = f"__str_{i}__"
             replacements[key] = lit
         
-        def replace_literal(match):
+        def replaceLiteral(match):
             texto = match.group(0)
             for key, val in replacements.items():
                 if val == texto:
                     return key
             return texto  # fallback (por si no se encuentra)
 
-        expr = re.sub(patron, replace_literal, expr, flags=re.VERBOSE)
+        expr = re.sub(patron, replaceLiteral, expr, flags=re.VERBOSE)
         # Reemplazar variables por context['var']
         tokens = re.findall(r"\b\w+(?:\[\w+(?:\[\w+\])?\])?\b", expr)
         for t in sorted(set(tokens), key=len, reverse=True):
@@ -293,6 +389,7 @@ class PseudoInterpreter:
         return
 
     def run(self):
+        self.codeLines.clear()
         with open(self.filename, 'r') as f:
             for line in f:
                 self.parseLine(line)
@@ -305,8 +402,8 @@ class PseudoInterpreter:
         #for k,v in self.context.items():
         #    print(k,v)
         
-        for k,v in self.functions.items():
-            print(k,v)
+        #for k,v in self.functions.items():
+        #    print(k,v)
         #execEnv = {}
         #exec(fullCode, execEnv)
         #if self.mainName:
