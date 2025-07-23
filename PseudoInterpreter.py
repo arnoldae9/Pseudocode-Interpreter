@@ -96,8 +96,16 @@ class PseudoInterpreter:
                 paramList.append(f"{nombreParam.strip()}: {tipoParam}")
 
         #print(nombre, paramList)
-        self.functions[nombre]= {k.strip(): v.strip() for k, v in (item.split(':') for item in paramList)}
-        paramList = ['context: dict']
+        self.functions[nombre] = {k.strip(): v.strip() for k, v in (item.split(':') for item in paramList)}
+        
+        for var, tipo in self.functions[nombre].items():
+            #print(var,tipo)
+            valorInicial = self.neutralValues.get(tipo, "None")
+            self.context[var+"_"+nombre] = valorInicial
+            self.codeLines.append(f"{self.indent * self.currentIndent}context['{var+"_"+nombre}'] = {valorInicial}")
+
+        if paramList:          
+            paramList = ['context: dict']
 
         defLine = f"def {nombre}({', '.join(paramList)})"
         if tipoRetorno:

@@ -18,3 +18,7 @@ Subproceso pitagoras(a : real, b : real)
     Hacer c = (a^2 + b^2)^(1/2)
     Escribir c
 FinSubproceso
+
+Subproceso holaMundo()
+    Escribir "Hola Mundo"
+FinSubproceso
