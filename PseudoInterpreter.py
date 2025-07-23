@@ -12,6 +12,8 @@ class PseudoInterpreter:
         self.currentIndent = 0
         self.esSubproceso = False
         self.SubprocesoActual = ""
+        self.SegunVar = None
+        self.EnSegun = False
         self.typesMap = {
             "entero": "int",
             "real": "float",
@@ -84,6 +86,27 @@ class PseudoInterpreter:
 
             case _ if line.startswith("Leer"):
                 self.Leer(line)
+
+            case _ if line.startswith("Si"):
+                self.Si(line)
+            
+            case "Sino":
+                self.Sino(line)
+
+            case "FinSi":
+                self.FinSi(line)
+
+            case _ if line.startswith("Segun"):
+                self.Segun(line)
+
+            case _ if line.startswith("Caso"):
+                self.Caso(line)
+
+            case "De Otro Modo":
+                self.DeOtroModo(line)
+
+            case "FinSegun":
+                self.FinSegun(line)
 
             case _ if line.startswith("Para"):
                 self.Para(line)
@@ -373,8 +396,63 @@ class PseudoInterpreter:
                         self.codeLines.append(f"{self.indent * self.currentIndent}context['{var}'] = input()")
             return
 
+    def Si(self,line):
+        m = re.match(r"Si (.+) Entonces", line)
+        if m:
+            cond = self._convertCondition(m.group(1))
+            self.codeLines.append(f"{self.indent()}if {cond}:")
+            self.currentIndent += 1
+            return
 
-    def Para(self,line):
+    def Sino(self,line):
+        if line == "Sino":
+            self.currentIndent -= 1
+            self.codeLines.append(f"{self.indent()}else:")
+            self.currentIndent += 1
+            return
+
+    def FinSi(self,line):
+        if line == "FinSi":
+            self.currentIndent -= 1
+            return
+        
+    def Segun(self, line):
+        m = re.match(r"Segun (.+)", line)
+        if m:
+            self.SegunVar = self._convertExpression(m.group(1))
+            self.EnSegun = False
+            return
+
+    def Caso(self, line):
+        m = re.match(r"Caso (.+)", line)
+        if m:
+            val = m.group(1).strip()
+            cond = f"{self.SegunVar} == {val}"
+
+            if not self.EnSegun:
+                self.codeLines.append(f"{self.indent * self.currentIndent}if {cond}:")
+                self.EnSegun = True
+            else:
+                self.currentIndent -= 1  # 👈 cerrar bloque anterior
+                self.codeLines.append(f"{self.indent * self.currentIndent}elif {cond}:")
+            self.currentIndent += 1
+            return
+
+    def DeOtroModo(self, line):
+        if line.strip() == "De Otro Modo":
+            self.currentIndent -= 1  # 👈 cerrar bloque anterior
+            self.codeLines.append(f"{self.indent * self.currentIndent}else:")
+            self.currentIndent += 1
+            return
+
+    def FinSegun(self, line):
+        if line.strip() == "FinSegun":
+            self.currentIndent -= 1
+            self.SegunVar = None
+            self.EnSegun = False
+            return
+
+    def Para(self, line):
         m = re.match(r"Para (\w+) *= *(.+) Hasta (.+) Hacer", line)
         if m:
             var, inicio, fin = m.groups()
