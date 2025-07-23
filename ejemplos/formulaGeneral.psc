@@ -41,24 +41,24 @@ Subproceso calcularDiscriminante(a : real, b : real, c : real) : real
     Regresar b^2 - 4 * a * c
 FinSubproceso
 
-Subproceso calcularRaicesDiferentes(a : real, b : real, discriminante : real, x1 : real, x2 : real)
-    Hacer x1 = (-b + discriminante^0.5) / (2 * a)
-    Hacer x2 = (-b - discriminante^0.5) / (2 * a)
+Subproceso calcularRaicesDiferentes(a : real, b : real, d : real, x1 : real, x2 : real)
+    Hacer x1 = (-b + d^0.5) / (2 * a)
+    Hacer x2 = (-b - d^0.5) / (2 * a)
 FinSubproceso
 
 Subproceso calcularRaizDoble(a : real, b : real, x1 : real)
     Hacer x1 = -b / (2 * a)
 FinSubproceso
 
-Subproceso calcularRaicesImaginarias(a : real, b : real, discriminante : real, xReal : real, xImaginaria : real)
+Subproceso calcularRaicesImaginarias(a : real, b : real, d : real, xReal : real, xImaginaria : real)
     Hacer xReal = -b / (2 * a)
-    Hacer xImaginaria = valorAbsoluto(discriminante) ^ 0.5 / (2 * a)
+    Hacer xImaginaria = valorAbsoluto(d) ^ 0.5 / (2 * a)
 FinSubproceso
 
-Subproceso valorAbsoluto(discriminante : real) : real
-    Si discriminante < 0 Entonces
-        Regresar -discriminante
+Subproceso valorAbsoluto(x : real) : real
+    Si x < 0 Entonces
+        Regresar -x
     Sino
-        Regresar discriminante
+        Regresar x
     FinSi
 FinSubproceso
