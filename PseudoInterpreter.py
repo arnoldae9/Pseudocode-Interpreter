@@ -613,8 +613,8 @@ class PseudoInterpreter:
         print("===== Código generado =====")
         print(fullCode)
 
-        #for k,v in self.context.items():
-        #    print(k,v)
+        for k,v in self.context.items():
+            print(k,v)
         
         #for k,v in self.contextTypes.items():
         #    print(k,v)
@@ -632,6 +632,6 @@ if __name__ == '__main__':
     #    print("Uso: python interpreter.py archivo.psc")
     #    sys.exit(1)
 
-    archivo = 'ejemplos/06-repetir.psc'#sys.argv[1]
+    archivo = 'ejemplos/07-ejemploCompleto.psc'#sys.argv[1]
     pi = PseudoInterpreter(archivo)
     pi.run()
