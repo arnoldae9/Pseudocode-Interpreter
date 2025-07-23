@@ -2,7 +2,8 @@ import re
 import sys
 
 class PseudoInterpreter:
-    def __init__(self):
+    def __init__(self,filename=""):
+        self.filename=filename
         self.codeLines = []
         self.context = {}
         self.functions = {}
@@ -23,6 +24,23 @@ class PseudoInterpreter:
             "str": "''",
             "bool": False
         }
+        self.iniciaSubprocesos()
+
+    def parseSubproceso(self,line):
+        line = line.strip()
+        match line:
+            case _ if not line:
+                return 
+            
+            case _ if line.startswith("Subproceso"):
+                self.Subproceso(line)
+
+            case "FinSubproceso":
+                self.FinSubproceso(line)
+            
+            case _:
+                self.SaltarLinea(line)
+
 
     def parseLine(self, line):
         line = line.strip()
@@ -53,6 +71,9 @@ class PseudoInterpreter:
             
             case _ if line.startswith("Hacer"):
                 self.Hacer(line)
+
+            case _ if line.startswith("Llamar"):
+                self.Llamar(line)
 
             case _:
                 self.NoReconocido(line)
@@ -100,11 +121,6 @@ class PseudoInterpreter:
 
         self.functions[nombre] = {k.strip(): v.strip() for k, v in (item.split(':') for item in paramList)}
         
-        for var, tipo in self.functions[nombre].items():
-            valorInicial = self.neutralValues.get(tipo, "None")
-            #self.context[var+"_"+nombre] = valorInicial
-            #self.codeLines.append(f"{self.indent * self.currentIndent}context['{var+"_"+nombre}'] = {valorInicial}")
-
         if paramList:
             if not tipoRetorno:
                 paramList += ['context: dict']
@@ -164,7 +180,7 @@ class PseudoInterpreter:
         expr = expr.strip()
         
         expr = self._convertExpression(expr)
-        # 👇 Detecta si es acceso tipo a[i][j]
+        # Detecta si es acceso tipo a[i][j]
         if "[" in var_expr and "]" in var_expr:
             arreglo = var_expr.split("[")[0].strip()
             indices = re.findall(r"\[(.*?)\]", var_expr)
@@ -181,15 +197,37 @@ class PseudoInterpreter:
             self.codeLines.append(f"{self.indent * self.currentIndent}context['{var_expr}'] = {expr}")
         return
 
+    def Llamar(self,line):
+        m = re.match(r"Llamar (\w+)\((.*)\)", line)
+        if m:
+            func, args = m.groups()
+            args = [a.strip() for a in args.split(",") if a.strip()]
+            param_names = self.functions.get(func, None)
+            print(param_names)
+            if not param_names:
+                self.codeLines.append(f"{self.indent * self.currentIndent}{line}")
+                return
+            print(args)
+            for param, arg in zip(param_names, args):
+                expr = self._convertExpression(arg)
+                #self.codeLines.append(f"{self.indent * self.currentIndent}context['{param}'] = {expr}")
+
+            self.codeLines.append(f"{self.indent * self.currentIndent}{func}({", ".join(args)}, context)")
+            return
+        return
     
     def NoReconocido(self,line):
         self.codeLines.append(f"{self.indent * self.currentIndent}# No procesado: {line}")
         return
     
+    def SaltarLinea(self,line):
+        self.codeLines.append(f"{self.indent * self.currentIndent}{line}")
+        return
 
     def _isCamelCase(self, identifier):
         return bool(re.fullmatch(r'[a-z]+(?:[A-Z][a-z0-9]*)*', identifier))
 
+    
     def _convertExpression(self, expr):
         expr = expr.strip()
         expr = expr.replace("^","**")
@@ -223,9 +261,7 @@ class PseudoInterpreter:
             else:  # cadena
                 key = f"__str_{i}__"
             replacements[key] = lit
-            
-
-
+        
         def replace_literal(match):
             texto = match.group(0)
             for key, val in replacements.items():
@@ -250,10 +286,14 @@ class PseudoInterpreter:
 
         return expr
 
+    def iniciaSubprocesos(self):
+        with open(self.filename, 'r') as f:
+            for line in f:
+                self.parseSubproceso(line)
+        return
 
-
-    def run(self, filename):
-        with open(filename, 'r') as f:
+    def run(self):
+        with open(self.filename, 'r') as f:
             for line in f:
                 self.parseLine(line)
 
@@ -262,11 +302,11 @@ class PseudoInterpreter:
         print("===== Código generado =====")
         print(fullCode)
 
-        for k,v in self.context.items():
-            print(k,v)
-        
-        #for k,v in self.functions.items():
+        #for k,v in self.context.items():
         #    print(k,v)
+        
+        for k,v in self.functions.items():
+            print(k,v)
         #execEnv = {}
         #exec(fullCode, execEnv)
         #if self.mainName:
@@ -279,5 +319,5 @@ if __name__ == '__main__':
     #    sys.exit(1)
 
     archivo = 'ejemplos/ejemplo.psc'#sys.argv[1]
-    pi = PseudoInterpreter()
-    pi.run(archivo)
+    pi = PseudoInterpreter(archivo)
+    pi.run()
