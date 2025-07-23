@@ -5,8 +5,10 @@ Inicio
     Definir arreglo[3], tabla[2][3] : real
     Hacer x = 5 + 3
     Hacer y = suma(3,2) + 1
+    Escribir "La suma es: ", y
     Hacer rubik[1][1][1] = 2
     Llamar pitagoras(3,4)
+    Llamar holaMundo('Luis')
 Fin
 //Texto libre no válido
 Subproceso suma(a : entero, b : entero) : entero

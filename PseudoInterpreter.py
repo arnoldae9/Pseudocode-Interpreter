@@ -396,18 +396,18 @@ class PseudoInterpreter:
 
 
         fullCode = "\n".join(self.codeLines)
-        print("===== Código generado =====")
-        print(fullCode)
+        #print("===== Código generado =====")
+        #print(fullCode)
 
         #for k,v in self.context.items():
         #    print(k,v)
         
         #for k,v in self.functions.items():
         #    print(k,v)
-        #execEnv = {}
-        #exec(fullCode, execEnv)
-        #if self.mainName:
-        #    execEnv[self.mainName]()
+        execEnv = {'context':self.context}
+        exec(fullCode, execEnv)
+        if self.mainName:
+            execEnv[self.mainName]()
 
 
 if __name__ == '__main__':
