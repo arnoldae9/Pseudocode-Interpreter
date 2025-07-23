@@ -6,6 +6,7 @@ class PseudoInterpreter:
         self.filename=filename
         self.codeLines = []
         self.context = {}
+        self.contextTypes = {}
         self.functions = {}
         self.indent = "    "
         self.currentIndent = 0
@@ -80,6 +81,21 @@ class PseudoInterpreter:
 
             case _ if line.startswith("Escribir"):
                 self.Escribir(line)
+
+            case _ if line.startswith("Leer"):
+                self.Leer(line)
+
+            case _ if line.startswith("Para"):
+                self.Para(line)
+
+            case "FinPara":
+                self.FinPara(line)
+
+            case _ if line.startswith("Mientras"):
+                self.Mientras(line)
+
+            case "FinMientras":
+                self.FinMientras(line)
 
             case _:
                 self.NoReconocido(line)
@@ -169,13 +185,17 @@ class PseudoInterpreter:
                 for dim in reversed(dims):
                     init = f"[{init} for _ in range({dim})]"
                 self.context[nombre] = eval(init)
+                self.contextTypes[nombre] = self.typesMap.get(tipoVariables)
                 self.codeLines.append(f"{self.indent * self.currentIndent}context['{nombre}'] = {init}")
             else:
                 self.context[var] = valorInicial
+                self.contextTypes[var] = self.typesMap.get(tipoVariables)
                 self.codeLines.append(f"{self.indent * self.currentIndent}context['{var}'] = {valorInicial}")
+            
+
         return
     
-    def Hacer(self,line):
+    def Hacer(self, line):
         patron = r"Hacer (.+) *= *(.*)"
         match = re.match(patron, line)
         if not match:
@@ -184,9 +204,10 @@ class PseudoInterpreter:
         varExpr, expr = match.groups()
         varExpr = varExpr.strip()
         expr = expr.strip()
-        
+
         expr = self._convertExpression(expr)
-        # Detecta si es acceso tipo a[i][j]
+
+        # 👉 Acceso tipo arreglo a[i][j]
         if "[" in varExpr and "]" in varExpr:
             arreglo = varExpr.split("[")[0].strip()
             indices = re.findall(r"\[(.*?)\]", varExpr)
@@ -199,9 +220,12 @@ class PseudoInterpreter:
                     acceso += f"[context['{idx}']]"
             self.codeLines.append(f"{self.indent * self.currentIndent}{acceso} = {expr}")
         else:
-            # Variable 
-            self.codeLines.append(f"{self.indent * self.currentIndent}context['{varExpr}'] = {expr}")
-        return
+            # 👉 Variable normal: decide si va en context o no
+            if varExpr in self.context:
+                self.codeLines.append(f"{self.indent * self.currentIndent}context['{varExpr}'] = {expr}")
+            else:
+                self.codeLines.append(f"{self.indent * self.currentIndent}{varExpr} = {expr}")
+
 
     def Llamar(self,line):
         m = re.match(r"Llamar (\w+)\((.*)\)", line)
@@ -309,8 +333,77 @@ class PseudoInterpreter:
 
         self.codeLines.append(f"{self.indent * self.currentIndent}print({', '.join(traducidas)}, sep='')")
 
+    def Leer(self,line):
+        m = re.match(r"Leer\s+(.+)", line)
+        if m:
+            variables_a_leer = [v.strip() for v in m.group(1).split(",")]
+            for var_expr in variables_a_leer:
+                # Acceso a arreglo
+                if "[" in var_expr and "]" in var_expr:
+                    arreglo = var_expr.split("[")[0]
+                    indices = re.findall(r"\[(.*?)\]", var_expr)
+                    acceso = f"context['{arreglo}']"
+                    for idx in indices:
+                        idx = idx.strip()
+                        if idx.isdigit():
+                            acceso += f"[{idx}]"
+                        else:
+                            acceso += f"[context['{idx}']]"
+                    tipo = self.contextTypes.get(arreglo, "str").lower()
+                    if tipo == "float":
+                        self.codeLines.append(f"{self.indent * self.currentIndent}{acceso} = float(input())")
+                    elif tipo == "int":
+                        self.codeLines.append(f"{self.indent * self.currentIndent}{acceso} = int(input())")
+                    elif tipo == "bool":
+                        self.codeLines.append(f"{self.indent * self.currentIndent}{acceso} = input().strip().lower() in ['verdadero', 'true']")
+                    else:
+                        self.codeLines.append(f"{self.indent * self.currentIndent}{acceso} = input()")
+
+                # Variable simple
+                else:
+                    var = var_expr
+                    tipo = self.contextTypes.get(var, "str").lower()
+                    if tipo == "float":
+                        self.codeLines.append(f"{self.indent * self.currentIndent}context['{var}'] = float(input())")
+                    elif tipo == "int":
+                        self.codeLines.append(f"{self.indent * self.currentIndent}context['{var}'] = int(input())")
+                    elif tipo == "bool":
+                        self.codeLines.append(f"{self.indent * self.currentIndent}context['{var}'] = input().strip().lower() in ['verdadero', 'true']")
+                    else:
+                        self.codeLines.append(f"{self.indent * self.currentIndent}context['{var}'] = input()")
+            return
 
 
+    def Para(self,line):
+        m = re.match(r"Para (\w+) *= *(.+) Hasta (.+) Hacer", line)
+        if m:
+            var, inicio, fin = m.groups()
+            inicio = self._convertExpression(inicio.strip())
+            fin = self._convertExpression(fin.strip())
+            self.codeLines.append(f"{self.indent * self.currentIndent}for context['{var}'] in range({inicio}, {fin} + 1):")
+            self.currentIndent += 1
+            return
+
+    
+    def FinPara(self,line):
+        if line == "FinPara":
+            self.currentIndent -= 1
+            self.codeLines.append("")
+            return
+
+    def Mientras(self,line):
+        m = re.match(r"Mientras (.+) Hacer", line)
+        if m:
+            cond = self._convertCondition(m.group(1))
+            self.codeLines.append(f"{self.indent * self.currentIndent}while {cond}:")
+            self.currentIndent += 1
+            return
+
+    def FinMientras(self,line):
+        if line == "FinMientras":
+            self.currentIndent -= 1
+            self.codeLines.append("")
+            return
     
     def NoReconocido(self,line):
         self.codeLines.append(f"{self.indent * self.currentIndent}# No procesado: {line}")
@@ -322,11 +415,31 @@ class PseudoInterpreter:
 
     def _isCamelCase(self, identifier):
         return bool(re.fullmatch(r'[a-z]+(?:[A-Z][a-z0-9]*)*', identifier))
+    
+    def _convertCondition(self, cond):
+        cond = cond.replace(" Y ", " and ").replace(" O ", " or ").replace("NO ", "not ")
+
+        # Preservar cadenas de texto (entre comillas simples o dobles)
+        string_literals = re.findall(r"'[^']*'|\"[^\"]*\"", cond)
+        replacements = {}
+        for i, lit in enumerate(string_literals):
+            key = f"__str_{i}__"
+            replacements[key] = lit
+            cond = cond.replace(lit, key)
+
+        cond = self._convertExpression(cond)
+        cond = re.sub(r"(?<![=!<>])=(?!=)", "==", cond)  # convierte = a == donde corresponde
+
+        # Restaurar strings
+        for key, val in replacements.items():
+            cond = cond.replace(key, val)
+
+        return cond
 
     
     def _convertExpression(self, expr):
         expr = expr.strip()
-        expr = expr.replace("^","**")
+        expr = expr.replace("^", "**")
 
         patron = r"""
             '[^']*'             |   # comillas simples
@@ -339,16 +452,13 @@ class PseudoInterpreter:
             \bFalso\b               # booleano False
         """
 
-        
-        # Extraer cadenas literales y reemplazarlas por tokens
-
+        # Extraer y reemplazar literales por tokens temporales
         stringLiterals = re.findall(patron, expr, re.VERBOSE)
         replacements = {}
 
         for i, lit in enumerate(stringLiterals):
             lit = lit.strip()
-            # Detectar tipo
-            if lit in ("True", "False"):
+            if lit in ("Verdadero", "Falso"):
                 key = f"__bool_{i}__"
             elif re.match(r'^\d+\.\d+$|^\.\d+$|^\d+\.$', lit):  # flotante
                 key = f"__float_{i}__"
@@ -357,30 +467,34 @@ class PseudoInterpreter:
             else:  # cadena
                 key = f"__str_{i}__"
             replacements[key] = lit
-        
+
         def replaceLiteral(match):
             texto = match.group(0)
             for key, val in replacements.items():
                 if val == texto:
                     return key
-            return texto  # fallback (por si no se encuentra)
+            return texto
 
         expr = re.sub(patron, replaceLiteral, expr, flags=re.VERBOSE)
-        # Reemplazar variables por context['var']
-        tokens = re.findall(r"\b\w+(?:\[\w+(?:\[\w+\])?\])?\b", expr)
+
+        # Buscar tokens que podrían ser variables (o funciones, etc.)
+        tokens = re.findall(r"\b\w+\b", expr)
         for t in sorted(set(tokens), key=len, reverse=True):
             if t in replacements:
                 continue
-            expr = re.sub(rf'\b{re.escape(t)}\b', f"{t}", expr)
+            if t in self.context:
+                expr = re.sub(rf'\b{re.escape(t)}\b', f"context['{t}']", expr)
 
-                
-
-        # Restaurar cadenas literales
+        # Restaurar literales
         for key, val in replacements.items():
             expr = expr.replace(key, val)
 
+        # Reemplazar booleanos por equivalentes Python
+        expr = expr.replace("Verdadero", "True")
+        expr = expr.replace("Falso", "False")
 
         return expr
+
 
     def iniciaSubprocesos(self):
         with open(self.filename, 'r') as f:
@@ -396,18 +510,21 @@ class PseudoInterpreter:
 
 
         fullCode = "\n".join(self.codeLines)
-        #print("===== Código generado =====")
-        #print(fullCode)
+        print("===== Código generado =====")
+        print(fullCode)
 
         #for k,v in self.context.items():
         #    print(k,v)
         
+        #for k,v in self.contextTypes.items():
+        #    print(k,v)
+
         #for k,v in self.functions.items():
         #    print(k,v)
-        execEnv = {'context':self.context}
-        exec(fullCode, execEnv)
-        if self.mainName:
-            execEnv[self.mainName]()
+        #execEnv = {'context':self.context}
+        #exec(fullCode, execEnv)
+        #if self.mainName:
+        #    execEnv[self.mainName]()
 
 
 if __name__ == '__main__':
@@ -415,6 +532,6 @@ if __name__ == '__main__':
     #    print("Uso: python interpreter.py archivo.psc")
     #    sys.exit(1)
 
-    archivo = 'ejemplos/ejemplo.psc'#sys.argv[1]
+    archivo = 'ejemplos/03-segun.psc'#sys.argv[1]
     pi = PseudoInterpreter(archivo)
     pi.run()
