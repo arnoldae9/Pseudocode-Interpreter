@@ -87,10 +87,10 @@ class PseudoInterpreter:
             case _ if line.startswith("Leer"):
                 self.Leer(line)
 
-            case _ if line.startswith("Si"):
+            case _ if line.startswith("Si "):
                 self.Si(line)
             
-            case "Sino":
+            case _ if line.startswith("Sino"):
                 self.Sino(line)
 
             case "FinSi":
@@ -119,6 +119,12 @@ class PseudoInterpreter:
 
             case "FinMientras":
                 self.FinMientras(line)
+
+            case "Repetir":
+                self.Repetir(line)
+
+            case _ if line.startswith("Hasta "):
+                self.HastaQue(line)
 
             case _:
                 self.NoReconocido(line)
@@ -400,14 +406,14 @@ class PseudoInterpreter:
         m = re.match(r"Si (.+) Entonces", line)
         if m:
             cond = self._convertCondition(m.group(1))
-            self.codeLines.append(f"{self.indent()}if {cond}:")
+            self.codeLines.append(f"{self.indent * self.currentIndent}if {cond}:")
             self.currentIndent += 1
             return
 
     def Sino(self,line):
         if line == "Sino":
             self.currentIndent -= 1
-            self.codeLines.append(f"{self.indent()}else:")
+            self.codeLines.append(f"{self.indent * self.currentIndent}else:")
             self.currentIndent += 1
             return
 
@@ -481,6 +487,22 @@ class PseudoInterpreter:
         if line == "FinMientras":
             self.currentIndent -= 1
             self.codeLines.append("")
+            return
+        
+    def Repetir(self, line):
+        if line == "Repetir":
+            self.codeLines.append(f"{self.indent * self.currentIndent}while True:")
+            self.currentIndent += 1
+            return
+
+    def HastaQue(self, line):
+        m = re.match(r"Hasta Que (.+)", line)
+        if m:
+            cond = self._convertCondition(m.group(1))
+            self.codeLines.append(f"{self.indent * self.currentIndent}if {cond}:")
+            self.currentIndent += 1
+            self.codeLines.append(f"{self.indent * self.currentIndent}break")
+            self.currentIndent -= 2  # Cierra el if y el while
             return
     
     def NoReconocido(self,line):
@@ -599,10 +621,10 @@ class PseudoInterpreter:
 
         #for k,v in self.functions.items():
         #    print(k,v)
-        #execEnv = {'context':self.context}
-        #exec(fullCode, execEnv)
-        #if self.mainName:
-        #    execEnv[self.mainName]()
+        execEnv = {'context':self.context}
+        exec(fullCode, execEnv)
+        if self.mainName:
+            execEnv[self.mainName]()
 
 
 if __name__ == '__main__':
@@ -610,6 +632,6 @@ if __name__ == '__main__':
     #    print("Uso: python interpreter.py archivo.psc")
     #    sys.exit(1)
 
-    archivo = 'ejemplos/03-segun.psc'#sys.argv[1]
+    archivo = 'ejemplos/06-repetir.psc'#sys.argv[1]
     pi = PseudoInterpreter(archivo)
     pi.run()

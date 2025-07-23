@@ -11,8 +11,9 @@ Inicio
     Escribir "Ingresa a:"
     Leer b
     Hacer x = a ^ 2 + b ^ 2
-    Escribir "Resultado:", x
-    Si x > 10 Entonces
+    Escribir "Resultado: ", x
+    Hacer ok = (x>10)
+    Si ok Entonces
         Escribir "Es mayor que diez"
     Sino
         Escribir "No es mayor que diez"
