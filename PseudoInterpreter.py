@@ -310,18 +310,19 @@ class PseudoInterpreter:
         if actual:
             partes.append(actual.strip())
 
-        traducidas = []
-        for parte in partes:
-            parte = parte.strip()
+        def procesar_expresion(expr):
+            # 👉 Si es número, retorna como está
+            if expr.isdigit():
+                return expr
 
-            # 👉 Cadena literal
-            if (parte.startswith('"') and parte.endswith('"')) or (parte.startswith("'") and parte.endswith("'")):
-                traducidas.append(parte)
+            # 👉 Si es string literal, retorna como está
+            if (expr.startswith('"') and expr.endswith('"')) or (expr.startswith("'") and expr.endswith("'")):
+                return expr
 
-            # 👉 Acceso tipo arreglo tabla[i][j]
-            elif "[" in parte and "]" in parte:
-                arreglo = parte.split("[")[0]
-                indices = re.findall(r"\[(.*?)\]", parte)
+            # 👉 Si es acceso tipo arreglo como nombres[i][j]
+            if "[" in expr and "]" in expr:
+                arreglo = expr.split("[")[0]
+                indices = re.findall(r"\[(.*?)\]", expr)
                 if self.esSubproceso:
                     acceso = arreglo
                 else:
@@ -332,35 +333,42 @@ class PseudoInterpreter:
                         acceso += f"[{idx}]"
                     else:
                         if self.esSubproceso:
-                            params = self.functions.get(self.subprocesoActual, {})
+                            params = self.functions.get(self.SubprocesoActual, {})
                             if idx in params:
                                 acceso += f"[{idx}]"
                             else:
                                 acceso += f"[context['{idx}']]"
                         else:
                             acceso += f"[context['{idx}']]"
-                traducidas.append(acceso)
+                return acceso
 
-            # 👉 Variable simple
-            elif re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', parte):
+            # 👉 Si es variable simple
+            if re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', expr):
                 if self.esSubproceso:
                     params = self.functions.get(self.SubprocesoActual, {})
-                    if parte in params:
-                        traducidas.append(parte)
+                    if expr in params:
+                        return expr
                     else:
-                        traducidas.append(f"context['{parte}']")
+                        return f"context['{expr}']"
                 else:
-                    traducidas.append(f"context['{parte}']")
+                    return f"context['{expr}']"
 
-            # 👉 Número literal
-            elif parte.isdigit():
-                traducidas.append(parte)
+            # 👉 Si es expresión con operadores: reemplazar variables
+            def reemplazar_var(m):
+                var = m.group(0)
+                if self.esSubproceso:
+                    params = self.functions.get(self.SubprocesoActual, {})
+                    if var in params:
+                        return var
+                return f"context['{var}']"
 
-            # 👉 Texto plano como fallback
-            else:
-                traducidas.append(f"'{parte}'")
+            # Solo reemplazar identificadores válidos
+            return re.sub(r'\b[a-zA-Z_]\w*\b', reemplazar_var, expr)
+
+        traducidas = [procesar_expresion(p.strip()) for p in partes]
 
         self.codeLines.append(f"{self.indent * self.currentIndent}print({', '.join(traducidas)}, sep='')")
+
 
     def Leer(self,line):
         m = re.match(r"Leer\s+(.+)", line)
