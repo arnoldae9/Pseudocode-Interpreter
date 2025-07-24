@@ -724,6 +724,6 @@ if __name__ == '__main__':
     #    print("Uso: python interpreter.py archivo.psc")
     #    sys.exit(1)
 
-    archivo = 'ejemplos/07-ejemploCompleto.psc'#sys.argv[1]
+    archivo = 'ejemplos/08-formulaGeneral.psc'#sys.argv[1]
     pi = PseudoInterpreter(archivo)
     pi.run()

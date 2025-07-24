@@ -2,21 +2,21 @@
 Algoritmo formulaGeneral
 
 Inicio
-    Definir a, b, c, discriminante, x1, x2, xReal, xImaginaria : real
+    Definir coefA, coefB, coefC, discriminante, x1, x2, xReal, xImaginaria : real
     Definir haySolucionReal : logico
 
     Escribir "Ingrese el valor de a:"
-    Leer a
+    Leer coefA
     Escribir "Ingrese el valor de b:"
-    Leer b
+    Leer coefB
     Escribir "Ingrese el valor de c:"
-    Leer c
+    Leer coefC
 
-    Hacer discriminante = calcularDiscriminante(a, b, c)
+    Hacer discriminante = calcularDiscriminante(coefA, coefB, coefC)
 
     Si discriminante > 0 Entonces
         Hacer haySolucionReal = Verdadero
-        Llamar calcularRaicesDiferentes(a, b, discriminante, x1, x2)
+        Llamar calcularRaicesDiferentes(coefA, coefB, discriminante)
         Escribir "Raíces reales y diferentes:"
         Escribir "x1 = ", x1
         Escribir "x2 = ", x2
@@ -24,12 +24,12 @@ Inicio
     Sino
         Si discriminante == 0 Entonces
             Hacer haySolucionReal = Verdadero
-            Llamar calcularRaizDoble(a, b, x1)
+            Llamar calcularRaizDoble(coefA, coefB)
             Escribir "Raíz doble real:"
             Escribir "x = ", x1
         Sino
             Hacer haySolucionReal = Falso
-            Llamar calcularRaicesImaginarias(a, b, discriminante, xReal, xImaginaria)
+            Llamar calcularRaicesImaginarias(coefA, coefB, discriminante)
             Escribir "Raíces complejas conjugadas:"
             Escribir "x1 = ", xReal, " + ", xImaginaria, "i"
             Escribir "x2 = ", xReal, " - ", xImaginaria, "i"
@@ -41,16 +41,16 @@ Subproceso calcularDiscriminante(a : real, b : real, c : real) : real
     Regresar b^2 - 4 * a * c
 FinSubproceso
 
-Subproceso calcularRaicesDiferentes(a : real, b : real, d : real, x1 : real, x2 : real)
+Subproceso calcularRaicesDiferentes(a : real, b : real, d : real)
     Hacer x1 = (-b + d^0.5) / (2 * a)
     Hacer x2 = (-b - d^0.5) / (2 * a)
 FinSubproceso
 
-Subproceso calcularRaizDoble(a : real, b : real, x1 : real)
+Subproceso calcularRaizDoble(a : real, b : real)
     Hacer x1 = -b / (2 * a)
 FinSubproceso
 
-Subproceso calcularRaicesImaginarias(a : real, b : real, d : real, xReal : real, xImaginaria : real)
+Subproceso calcularRaicesImaginarias(a : real, b : real, d : real)
     Hacer xReal = -b / (2 * a)
     Hacer xImaginaria = valorAbsoluto(d) ^ 0.5 / (2 * a)
 FinSubproceso
