@@ -469,9 +469,9 @@ class PseudoInterpreter:
     def Si(self, line):
         m = re.match(r"Si (.+) Entonces", line)
         if m:
-            print(m.group(1))
+            #print(m.group(1))
             cond = self._convertCondition(m.group(1))
-            print(cond)
+            #print(cond)
             self.codeLines.append(f"{self.indent * self.currentIndent}if {cond}:")
             self.currentIndent += 1
             return
