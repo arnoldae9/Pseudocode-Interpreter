@@ -2,6 +2,14 @@ import re
 import argparse
 import os
 
+version_major = 1
+version_minor = 30
+version_patch = 5
+beta = True
+
+VERSION = f"{version_major}.{version_minor}.{version_patch}" + ("-beta" if beta else "")
+
+
 class PseudoInterpreter:
     def __init__(self,filename=""):
         self.filename=filename
@@ -742,9 +750,10 @@ class PseudoInterpreter:
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Intérprete de pseudocódigo.")
+    parser = argparse.ArgumentParser(description="Intérprete de pseudocódigo.", prog='PseudoInterpreter')
     parser.add_argument("archivo", help="Archivo de entrada con extensión .psc")
     parser.add_argument("--export", action="store_true", help="Exportar a archivo Python (.py)")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {VERSION}", help="Mostrar versión del programa y salir")
 
     args = parser.parse_args()
 
