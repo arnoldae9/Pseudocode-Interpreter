@@ -13,11 +13,11 @@ Inicio
     Hacer aprobados = 0
 
     Para i = 0 Hasta 2 Hacer
-        Escribir "Nombre del estudiante ", i + 1, ": "
+        Escribir "Nombre del estudiante ", i , ": "
         Leer nombres[i]
 
         Para j = 0 Hasta 1 Hacer
-            Escribir "Calificación ", j + 1, " de ", nombres[i], ": "
+            Escribir "Calificación ", j , " de ", nombres[i], ": "
             Leer calificaciones[i][j]
         FinPara
 
@@ -42,7 +42,11 @@ Inicio
                 Definir idx : entero
                 Escribir "Ingresa el índice del estudiante (0 a 2): "
                 Leer idx
-                Escribir "El promedio de ", nombres[idx], " es ", promedios[idx]
+                Si idx < 0 O idx > 2 Entonces
+                    Escribir "Índice no válido."
+                Sino
+                    Escribir "El promedio de ", nombres[idx], " es ", promedios[idx]
+                FinSi
             Caso 'n'
                 Escribir "Consulta finalizada."
             De Otro Modo
