@@ -239,9 +239,9 @@ class PseudoInterpreter:
         expr = self._convertExpression(expr)
 
         # Obtener parámetros actuales (o conjunto vacío si no estamos en un subproceso)
-        parametros_actuales = set()
+        parametrosActuales = set()
         if self.SubprocesoActual and self.SubprocesoActual in self.functions:
-            parametros_actuales = set(self.functions[self.SubprocesoActual].keys())
+            parametrosActuales = set(self.functions[self.SubprocesoActual].keys())
 
         # 👉 Caso acceso tipo arreglo: promedios[pos]
         if "[" in varExpr and "]" in varExpr:
@@ -249,14 +249,14 @@ class PseudoInterpreter:
             indices = re.findall(r"\[(.*?)\]", varExpr)
 
             # El arreglo es parámetro o contexto
-            if arreglo in parametros_actuales:
+            if arreglo in parametrosActuales:
                 acceso = arreglo
             else:
                 acceso = f"context['{arreglo}']"
 
             for idx in indices:
                 idx = idx.strip()
-                if idx.isdigit() or idx in parametros_actuales:
+                if idx.isdigit() or idx in parametrosActuales:
                     acceso += f"[{idx}]"
                 else:
                     acceso += f"[context['{idx}']]"
@@ -265,7 +265,7 @@ class PseudoInterpreter:
 
         else:
             # 👉 Variable normal: local (context) o parámetro
-            if varExpr in parametros_actuales:
+            if varExpr in parametrosActuales:
                 self.codeLines.append(f"{self.indent * self.currentIndent}{varExpr} = {expr}")
             else:
                 self.codeLines.append(f"{self.indent * self.currentIndent}context['{varExpr}'] = {expr}")
@@ -343,22 +343,22 @@ class PseudoInterpreter:
         texto = m.group(1).strip()
         partes = []
         actual = ""
-        en_cadena = False
-        comilla_actual = ""
+        enCadena = False
+        comillaActual = ""
 
         # 👉 Separación segura por comas respetando comillas
         for c in texto:
             if c in ['"', "'"]:
-                if not en_cadena:
-                    en_cadena = True
-                    comilla_actual = c
+                if not enCadena:
+                    enCadena = True
+                    comillaActual = c
                     actual += c
-                elif c == comilla_actual:
-                    en_cadena = False
+                elif c == comillaActual:
+                    enCadena = False
                     actual += c
                 else:
                     actual += c
-            elif c == ',' and not en_cadena:
+            elif c == ',' and not enCadena:
                 partes.append(actual.strip())
                 actual = ""
             else:
@@ -366,7 +366,7 @@ class PseudoInterpreter:
         if actual:
             partes.append(actual.strip())
 
-        def procesar_expresion(expr):
+        def procesarExpresion(expr):
             # 👉 Si es número, retorna como está
             if expr.isdigit():
                 return expr
@@ -410,7 +410,7 @@ class PseudoInterpreter:
                     return f"context['{expr}']"
 
             # 👉 Si es expresión con operadores: reemplazar variables
-            def reemplazar_var(m):
+            def reemplazarVar(m):
                 var = m.group(0)
                 if self.esSubproceso:
                     params = self.functions.get(self.SubprocesoActual, {})
@@ -419,9 +419,9 @@ class PseudoInterpreter:
                 return f"context['{var}']"
 
             # Solo reemplazar identificadores válidos
-            return re.sub(r'\b[a-zA-Z_]\w*\b', reemplazar_var, expr)
+            return re.sub(r'\b[a-zA-Z_]\w*\b', reemplazarVar, expr)
 
-        traducidas = [procesar_expresion(p.strip()) for p in partes]
+        traducidas = [procesarExpresion(p.strip()) for p in partes]
 
         self.codeLines.append(f"{self.indent * self.currentIndent}print({', '.join(traducidas)}, sep='')")
 
@@ -429,12 +429,12 @@ class PseudoInterpreter:
     def Leer(self,line):
         m = re.match(r"Leer\s+(.+)", line)
         if m:
-            variables_a_leer = [v.strip() for v in m.group(1).split(",")]
-            for var_expr in variables_a_leer:
+            variablesALeer = [v.strip() for v in m.group(1).split(",")]
+            for varExpr in variablesALeer:
                 # Acceso a arreglo
-                if "[" in var_expr and "]" in var_expr:
-                    arreglo = var_expr.split("[")[0]
-                    indices = re.findall(r"\[(.*?)\]", var_expr)
+                if "[" in varExpr and "]" in varExpr:
+                    arreglo = varExpr.split("[")[0]
+                    indices = re.findall(r"\[(.*?)\]", varExpr)
                     acceso = f"context['{arreglo}']"
                     for idx in indices:
                         idx = idx.strip()
@@ -454,7 +454,7 @@ class PseudoInterpreter:
 
                 # Variable simple
                 else:
-                    var = var_expr
+                    var = varExpr
                     tipo = self.contextTypes.get(var, "str").lower()
                     if tipo == "float":
                         self.codeLines.append(f"{self.indent * self.currentIndent}context['{var}'] = float(input())")
@@ -589,9 +589,9 @@ class PseudoInterpreter:
         cond = cond.replace(" Y ", " and ").replace(" O ", " or ").replace("NO ", "not ")
 
         # Preservar cadenas de texto
-        string_literals = re.findall(r"'[^']*'|\"[^\"]*\"", cond)
+        stringLiterals = re.findall(r"'[^']*'|\"[^\"]*\"", cond)
         replacements = {}
-        for i, lit in enumerate(string_literals):
+        for i, lit in enumerate(stringLiterals):
             key = f"__str_{i}__"
             replacements[key] = lit
             cond = cond.replace(lit, key)
@@ -601,7 +601,7 @@ class PseudoInterpreter:
 
         # --- NUEVO: procesar índices ---
         # Detecta cualquier cosa como context['var'][index] o similar
-        def replace_index(match):
+        def replaceIndex(match):
             var = match.group(1)
             index = match.group(2).strip()
             # Si el índice es un identificador (no un número ni ya envuelto en context)
@@ -609,7 +609,7 @@ class PseudoInterpreter:
                 index = f"context['{index}']"
             return f"{var}[{index}]"
 
-        cond = re.sub(r"(context\['\w+'\])\[(.*?)\]", replace_index, cond)
+        cond = re.sub(r"(context\['\w+'\])\[(.*?)\]", replaceIndex, cond)
 
         # Variables simples aún no envueltas
         tokens = re.findall(r"\b[a-zA-Z_]\w*\b", cond)
@@ -684,8 +684,6 @@ class PseudoInterpreter:
         return expr
 
 
-
-
     def iniciaSubprocesos(self):
         with open(self.filename, 'r') as f:
             for line in f:
@@ -693,20 +691,13 @@ class PseudoInterpreter:
         return
     
 
-
     def run(self, ejecutar=True):
         self.codeLines.clear()
         with open(self.filename, 'r') as f:
             for line in f:
                 self.parseLine(line)
 
-
-
-        #print(self.codeLines)
         fullCode = "\n".join(self.codeLines)
-        #print("===== Código generado =====")
-        #print(fullCode)
-        #print("===== Fin Código generado =====")
         if ejecutar:
             execEnv = {'context':self.context}
             exec(fullCode, execEnv)
@@ -719,23 +710,23 @@ class PseudoInterpreter:
             print("Error: No se ha definido el nombre del archivo de entrada (.psc).")
             return
 
-        base_name = os.path.splitext(self.filename)[0]
-        output_file = base_name + ".py"
+        baseName = os.path.splitext(self.filename)[0]
+        outputFile = baseName + ".py"
 
         # Construir contexto con valores neutros
-        neutral_context = {}
+        neutralContext = {}
         for var, tipo in self.contextTypes.items():
-            py_type = self.typesMap.get(tipo)
-            if py_type is not None:
-                neutral_context[var] = self.neutralValues.get(py_type, "None")
+            pyType = self.typesMap.get(tipo)
+            if pyType is not None:
+                neutralContext[var] = self.neutralValues.get(pyType, "None")
             else:
-                neutral_context[var] = "None"
+                neutralContext[var] = "None"
 
         try:
-            with open(output_file, "w", encoding="utf-8") as f:
+            with open(outputFile, "w", encoding="utf-8") as f:
                 f.write("# Archivo generado automáticamente desde pseudocódigo\n\n")
                 f.write("context = {\n")
-                for k, v in neutral_context.items():
+                for k, v in neutralContext.items():
                     f.write(f"    '{k}': {v},\n")
                 f.write("}\n\n")
                 for line in self.codeLines:
@@ -744,7 +735,7 @@ class PseudoInterpreter:
                 f.write("if __name__ == '__main__':\n")
                 f.write(f"    {self.mainName}()\n")
 
-            print(f"Archivo exportado correctamente: {output_file}")
+            print(f"Archivo exportado correctamente: {outputFile}")
 
         except Exception as e:
             print(f"Error al exportar archivo Python: {e}")
