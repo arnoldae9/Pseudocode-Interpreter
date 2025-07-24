@@ -694,7 +694,7 @@ class PseudoInterpreter:
     
 
 
-    def run(self):
+    def run(self, ejecutar=True):
         self.codeLines.clear()
         with open(self.filename, 'r') as f:
             for line in f:
@@ -707,11 +707,11 @@ class PseudoInterpreter:
         #print("===== Código generado =====")
         #print(fullCode)
         #print("===== Fin Código generado =====")
-        
-        execEnv = {'context':self.context}
-        exec(fullCode, execEnv)
-        if self.mainName:
-            execEnv[self.mainName]()
+        if ejecutar:
+            execEnv = {'context':self.context}
+            exec(fullCode, execEnv)
+            if self.mainName:
+                execEnv[self.mainName]()
 
 
     def exportPython(self):
@@ -759,7 +759,9 @@ if __name__ == '__main__':
 
     archivo = args.archivo
     pi = PseudoInterpreter(archivo)
-    pi.run()
+    if not args.export:
+        pi.run()
 
     if args.export:
+        pi.run(ejecutar=False)
         pi.exportPython()
