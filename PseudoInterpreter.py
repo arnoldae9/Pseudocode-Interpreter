@@ -1,5 +1,6 @@
 import re
-import sys
+import argparse
+import os
 
 class PseudoInterpreter:
     def __init__(self,filename=""):
@@ -150,7 +151,8 @@ class PseudoInterpreter:
         return
     
     def Comentario(self,line):
-        self.codeLines.append(line.replace("//", "# "))
+        line = line.replace("//", "# ")
+        self.codeLines.append(f"{self.indent * self.currentIndent}{line}")
         return
     
     def Subproceso(self,line):
@@ -702,28 +704,62 @@ class PseudoInterpreter:
 
         #print(self.codeLines)
         fullCode = "\n".join(self.codeLines)
-        print("===== Código generado =====")
-        print(fullCode)
-        print("===== Fin Código generado =====")
-        #for k,v in self.context.items():
-        #    print(k,v)
+        #print("===== Código generado =====")
+        #print(fullCode)
+        #print("===== Fin Código generado =====")
         
-        #for k,v in self.contextTypes.items():
-        #    print(k,v)
-
-        #for k,v in self.functions.items():
-        #    print(k,v)
         execEnv = {'context':self.context}
         exec(fullCode, execEnv)
         if self.mainName:
             execEnv[self.mainName]()
 
 
-if __name__ == '__main__':
-    #if len(sys.argv) < 2:
-    #    print("Uso: python interpreter.py archivo.psc")
-    #    sys.exit(1)
+    def exportPython(self):
+        if not hasattr(self, 'filename'):
+            print("Error: No se ha definido el nombre del archivo de entrada (.psc).")
+            return
 
-    archivo = 'ejemplos/08-formulaGeneral.psc'#sys.argv[1]
+        base_name = os.path.splitext(self.filename)[0]
+        output_file = base_name + ".py"
+
+        # Construir contexto con valores neutros
+        neutral_context = {}
+        for var, tipo in self.contextTypes.items():
+            py_type = self.typesMap.get(tipo)
+            if py_type is not None:
+                neutral_context[var] = self.neutralValues.get(py_type, "None")
+            else:
+                neutral_context[var] = "None"
+
+        try:
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write("# Archivo generado automáticamente desde pseudocódigo\n\n")
+                f.write("context = {\n")
+                for k, v in neutral_context.items():
+                    f.write(f"    '{k}': {v},\n")
+                f.write("}\n\n")
+                for line in self.codeLines:
+                    f.write(line + "\n")
+                f.write("\n")
+                f.write("if __name__ == '__main__':\n")
+                f.write(f"    {self.mainName}()\n")
+
+            print(f"Archivo exportado correctamente: {output_file}")
+
+        except Exception as e:
+            print(f"Error al exportar archivo Python: {e}")
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Intérprete de pseudocódigo.")
+    parser.add_argument("archivo", help="Archivo de entrada con extensión .psc")
+    parser.add_argument("--export", action="store_true", help="Exportar a archivo Python (.py)")
+
+    args = parser.parse_args()
+
+    archivo = args.archivo
     pi = PseudoInterpreter(archivo)
     pi.run()
+
+    if args.export:
+        pi.exportPython()
