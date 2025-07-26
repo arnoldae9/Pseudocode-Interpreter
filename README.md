@@ -1,6 +1,6 @@
 # Pseudocode Interpreter
 
-Este es un Interprete de Pseudocodigo para un protocolo de pseudocódigo diseñado para la materia de Metodología de la Programación, de la Facultad de Ciencias Físico Matemácias, UANL
+Este es un Interprete de Pseudocodigo para un protocolo de pseudocódigo diseñado para la materia de Metodología de la Programación, de la Facultad de Ciencias Físico Matemáticas, UANL
 
 
 Si quieres agregar una funcionalidad o corregir algo mandame mensaje a lgutierrezr93@gmail.com
