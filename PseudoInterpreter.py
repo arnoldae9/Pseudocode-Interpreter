@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# File: interprete.py
+# File: PseudoInterpreter.py
 # Author: Luis Gutiérrez
 # License: GNU Affero General Public License version 3 or later
 #
