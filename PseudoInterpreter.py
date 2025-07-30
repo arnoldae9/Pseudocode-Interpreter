@@ -302,7 +302,7 @@ class PseudoInterpreter:
             func, args = m.groups()
             args = [a.strip() for a in args.split(",") if a.strip()]
             paramNames = self.functions.get(func, None)
-
+# FIXME: NO PERMITE FUNCIONES SIN ARGUMENTOS
             if not paramNames:
                 self.codeLines.append(f"{self.indent * self.currentIndent}# No se encontró el subproceso {func}")
                 return
@@ -323,7 +323,7 @@ class PseudoInterpreter:
                             acceso += f"[{idx}]"
                         else:
                             if self.esSubproceso:
-                                params = self.functions.get(self.subprocesoActual, {})
+                                params = self.functions.get(self.SubprocesoActual, {})
                                 if idx in params:
                                     acceso += f"[{idx}]"
                                 else:
@@ -335,7 +335,7 @@ class PseudoInterpreter:
                 # Variable simple
                 elif re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', arg):
                     if self.esSubproceso:
-                        params = self.functions.get(self.subprocesoActual, {})
+                        params = self.functions.get(self.SubprocesoActual, {})
                         if arg in params:
                             traducidos.append(arg)
                         else:
