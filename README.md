@@ -26,6 +26,7 @@ En especial a:
 <details>
   <summary><h2>Versiones Anteriores</h2></summary>
 <h3>Versión 1.30.5-beta</h3>
+  
 - Se agregaron 30 palabras reservadas
 - Se agregó argparse para recibir el archivo, versión y exportar
 - Se compiló en linux
