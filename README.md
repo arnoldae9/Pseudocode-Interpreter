@@ -6,7 +6,7 @@ Este es un Interprete de Pseudocódigo para un protocolo de pseudocódigo diseñ
 Si quieres agregar una funcionalidad o corregir algo mandame mensaje a lgutierrezr93@gmail.com
 
 <details>
-  <summary>## Agradecimientos</summary>
+  <summary><h2> Agradecimientos</h2></summary>
 Quiero agradecer a todas las personas que han probado, reportado errores y sugerido mejoras para este proyecto.
 
 En especial a:
@@ -24,7 +24,7 @@ En especial a:
 - (bugfix) Se corrigió un error donde se no validaba los arreglos si estaban en un Subproceso
 
 <details>
-  <summary>## Versiones Anteriores</summary>
+  <summary><h2>Versiones Anteriores</h2></summary>
 ### Versión 1.30.5-beta
 - Se agregaron 30 palabras reservadas
 - Se agregó argparse para recibir el archivo, versión y exportar
