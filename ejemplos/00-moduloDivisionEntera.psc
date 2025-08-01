@@ -20,4 +20,9 @@ Inicio
     Hacer b = 5 % 3
     Escribir "El división entera es: ", a
     Escribir "El módulo es: ", b
+    Llamar holaMundo()
 Fin
+
+Subproceso holaMundo()
+    Escribir "Hola mundo"
+FinSubproceso

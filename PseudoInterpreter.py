@@ -19,7 +19,7 @@ import os
 
 version_major = 1
 version_minor = 30
-version_patch = 5
+version_patch = 6
 beta = True
 
 VERSION = f"{version_major}.{version_minor}.{version_patch}" + ("-beta" if beta else "")
@@ -266,7 +266,7 @@ class PseudoInterpreter:
         if self.SubprocesoActual and self.SubprocesoActual in self.functions:
             parametrosActuales = set(self.functions[self.SubprocesoActual].keys())
 
-        # 👉 Caso acceso tipo arreglo: promedios[pos]
+        #  Caso acceso tipo arreglo: promedios[pos]
         if "[" in varExpr and "]" in varExpr:
             arreglo = varExpr.split("[")[0].strip()
             indices = re.findall(r"\[(.*?)\]", varExpr)
@@ -287,7 +287,7 @@ class PseudoInterpreter:
             self.codeLines.append(f"{self.indent * self.currentIndent}{acceso} = {expr}")
 
         else:
-            # 👉 Variable normal: local (context) o parámetro
+            #  Variable normal: local (context) o parámetro
             if varExpr in parametrosActuales:
                 self.codeLines.append(f"{self.indent * self.currentIndent}{varExpr} = {expr}")
             else:
@@ -302,52 +302,53 @@ class PseudoInterpreter:
             func, args = m.groups()
             args = [a.strip() for a in args.split(",") if a.strip()]
             paramNames = self.functions.get(func, None)
-
-            if not paramNames:
+            if paramNames is None:
                 self.codeLines.append(f"{self.indent * self.currentIndent}# No se encontró el subproceso {func}")
                 return
-
-            traducidos = []
-            for arg in args:
-                # Acceso tipo arreglo tabla[i][j]
-                if "[" in arg and "]" in arg:
-                    arreglo = arg.split("[")[0]
-                    indices = re.findall(r"\[(.*?)\]", arg)
-                    if self.esSubproceso:
-                        acceso = arreglo
-                    else:
-                        acceso = f"context['{arreglo}']"
-                    for idx in indices:
-                        idx = idx.strip()
-                        if idx.isdigit():
-                            acceso += f"[{idx}]"
+            elif not paramNames:
+                self.codeLines.append(f"{self.indent * self.currentIndent}{func}()")
+            else:
+                traducidos = []
+                for arg in args:
+                    # Acceso tipo arreglo tabla[i][j]
+                    if "[" in arg and "]" in arg:
+                        arreglo = arg.split("[")[0]
+                        indices = re.findall(r"\[(.*?)\]", arg)
+                        if self.esSubproceso:
+                            acceso = arreglo
                         else:
-                            if self.esSubproceso:
-                                params = self.functions.get(self.subprocesoActual, {})
-                                if idx in params:
-                                    acceso += f"[{idx}]"
+                            acceso = f"context['{arreglo}']"
+                        for idx in indices:
+                            idx = idx.strip()
+                            if idx.isdigit():
+                                acceso += f"[{idx}]"
+                            else:
+                                if self.esSubproceso:
+                                    params = self.functions.get(self.SubprocesoActual, {})
+                                    if idx in params:
+                                        acceso += f"[{idx}]"
+                                    else:
+                                        acceso += f"[context['{idx}']]"
                                 else:
                                     acceso += f"[context['{idx}']]"
-                            else:
-                                acceso += f"[context['{idx}']]"
-                    traducidos.append(acceso)
+                        traducidos.append(acceso)
 
-                # Variable simple
-                elif re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', arg):
-                    if self.esSubproceso:
-                        params = self.functions.get(self.subprocesoActual, {})
-                        if arg in params:
-                            traducidos.append(arg)
+                    # Variable simple
+                    elif re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', arg):
+                        if self.esSubproceso:
+                            params = self.functions.get(self.SubprocesoActual, {})
+                            if arg in params:
+                                traducidos.append(arg)
+                            else:
+                                traducidos.append(f"context['{arg}']")
                         else:
                             traducidos.append(f"context['{arg}']")
+
+                    # Número o literal
                     else:
-                        traducidos.append(f"context['{arg}']")
+                        traducidos.append(arg)
 
-                # Número o literal
-                else:
-                    traducidos.append(arg)
-
-            self.codeLines.append(f"{self.indent * self.currentIndent}{func}({', '.join(traducidos)}, context)")
+                self.codeLines.append(f"{self.indent * self.currentIndent}{func}({', '.join(traducidos)}, context)")
 
     
     def Regresar(self,line):
@@ -369,7 +370,7 @@ class PseudoInterpreter:
         enCadena = False
         comillaActual = ""
 
-        # 👉 Separación segura por comas respetando comillas
+        #  Separación segura por comas respetando comillas
         for c in texto:
             if c in ['"', "'"]:
                 if not enCadena:
@@ -390,15 +391,15 @@ class PseudoInterpreter:
             partes.append(actual.strip())
 
         def procesarExpresion(expr):
-            # 👉 Si es número, retorna como está
+            #  Si es número, retorna como está
             if expr.isdigit():
                 return expr
 
-            # 👉 Si es string literal, retorna como está
+            #  Si es string literal, retorna como está
             if (expr.startswith('"') and expr.endswith('"')) or (expr.startswith("'") and expr.endswith("'")):
                 return expr
 
-            # 👉 Si es acceso tipo arreglo como nombres[i][j]
+            #  Si es acceso tipo arreglo como nombres[i][j]
             if "[" in expr and "]" in expr:
                 arreglo = expr.split("[")[0]
                 indices = re.findall(r"\[(.*?)\]", expr)
@@ -421,7 +422,7 @@ class PseudoInterpreter:
                             acceso += f"[context['{idx}']]"
                 return acceso
 
-            # 👉 Si es variable simple
+            #  Si es variable simple
             if re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', expr):
                 if self.esSubproceso:
                     params = self.functions.get(self.SubprocesoActual, {})
@@ -432,7 +433,7 @@ class PseudoInterpreter:
                 else:
                     return f"context['{expr}']"
 
-            # 👉 Si es expresión con operadores: reemplazar variables
+            #  Si es expresión con operadores: reemplazar variables
             def reemplazarVar(m):
                 var = m.group(0)
                 if self.esSubproceso:
@@ -768,7 +769,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Intérprete de pseudocódigo.", prog='PseudoInterpreter')
     parser.add_argument("archivo", help="Archivo de entrada con extensión .psc")
     parser.add_argument("--export", action="store_true", help="Exportar a archivo Python (.py)")
-    parser.add_argument("--version", action="version", version=f"%(prog)s {VERSION}", help="Mostrar versión del programa y salir")
+    parser.add_argument("--version", action="version", version=f"{VERSION}", help="Mostrar versión del programa y salir")
 
     args = parser.parse_args()
 

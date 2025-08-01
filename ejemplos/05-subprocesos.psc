@@ -24,6 +24,7 @@ Inicio
     Hacer rubik[1][1][1] = 2
     Llamar pitagoras(3,4)
     Llamar holaMundo('Luis')
+    Llamar noParams()
 Fin
 //Texto libre no válido
 Subproceso suma(a : entero, b : entero) : entero
@@ -38,4 +39,8 @@ FinSubproceso
 
 Subproceso holaMundo(nombre : cadena)
     Escribir "Hola Mundo, hola ", nombre
+FinSubproceso
+
+Subproceso noParams()
+    Escribir "Sin parametros"
 FinSubproceso
