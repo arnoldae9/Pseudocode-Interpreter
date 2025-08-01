@@ -6,7 +6,7 @@ Este es un Interprete de Pseudocódigo para un protocolo de pseudocódigo diseñ
 Si quieres agregar una funcionalidad o corregir algo mandame mensaje a lgutierrezr93@gmail.com
 
 <details>
-  <summary>Agradecimientos</summary>
+  <summary>## Agradecimientos</summary>
 Quiero agradecer a todas las personas que han probado, reportado errores y sugerido mejoras para este proyecto.
 
 En especial a:
@@ -23,9 +23,11 @@ En especial a:
 - (bugfix) Se corrigió que ahora si se puede llamar a los Subprocesos sin parámetros
 - (bugfix) Se corrigió un error donde se no validaba los arreglos si estaban en un Subproceso
 
-***
+<details>
+  <summary>## Versiones Anteriores</summary>
 ### Versión 1.30.5-beta
 - Se agregaron 30 palabras reservadas
 - Se agregó argparse para recibir el archivo, versión y exportar
 - Se compiló en linux
+</details>
 ***
